@@ -88,8 +88,43 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
   try {
-    await prisma.bouleNight.delete({
-      where: { id },
+    await prisma.$transaction(async (tx) => {
+      // Delete all match-related data for this night
+      const matches = await tx.match.findMany({
+        where: { nightId: id },
+        select: { id: true },
+      });
+
+      const matchIds = matches.map((m) => m.id);
+
+      if (matchIds.length > 0) {
+        await tx.matchPlayer.deleteMany({
+          where: { matchTeam: { matchId: { in: matchIds } } },
+        });
+
+        await tx.matchTeam.deleteMany({
+          where: { matchId: { in: matchIds } },
+        });
+
+        await tx.match.deleteMany({
+          where: { id: { in: matchIds } },
+        });
+      }
+
+      // Delete rounds for this night
+      await tx.round.deleteMany({
+        where: { nightId: id },
+      });
+
+      // Delete attendance for this night
+      await tx.nightAttendance.deleteMany({
+        where: { nightId: id },
+      });
+
+      // Finally delete the night itself
+      await tx.bouleNight.delete({
+        where: { id },
+      });
     });
 
     return NextResponse.json({ ok: true }, { status: 200 });
