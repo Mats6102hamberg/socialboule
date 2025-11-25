@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { EditNightForm } from "./EditNightForm";
 import { AttendanceSection } from "./AttendanceSection";
 import { Round1ResultsSection } from "./Round1ResultsSection";
+import { Round2ResultsSection } from "./Round2ResultsSection";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -201,6 +202,8 @@ export default async function NightEditPage({ params }: PageProps) {
 
         {/* Round 2 section */}
         <RoundSection nightId={nightId} roundNumber={2} />
+
+        <Round2ResultsSection />
 
         <Round1ResultsSection />
       </main>
