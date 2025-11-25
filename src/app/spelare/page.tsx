@@ -1,8 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { PlayRequestForm } from "./PlayRequestForm";
 
 export default async function PlayerViewPage() {
   const nights = await prisma.bouleNight.findMany({
     orderBy: { date: "asc" },
+    include: {
+      attendance: {
+        where: { present: true },
+      },
+    },
   });
 
   return (
@@ -15,7 +21,7 @@ export default async function PlayerViewPage() {
           </p>
         </header>
 
-        <section className="space-y-4">
+        <section className="space-y-6">
           {nights.length === 0 ? (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               Inga boule-kvällar är publicerade ännu. Fråga arrangören om mer information.
@@ -33,6 +39,14 @@ export default async function PlayerViewPage() {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}
+                    {" "}
+                    · {night.type === "DAY" ? "Dag" : "Kväll"}
+                  </p>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    {night.attendance.length} anmälda
+                    {typeof night.maxPlayers === "number" && night.maxPlayers > 0
+                      ? ` / max ${night.maxPlayers}`
+                      : ""}
                   </p>
                   {night.location && (
                     <p className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -49,6 +63,8 @@ export default async function PlayerViewPage() {
             </div>
           )}
         </section>
+
+        <PlayRequestForm />
       </main>
     </div>
   );

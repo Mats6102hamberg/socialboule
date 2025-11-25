@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { CreateNightForm } from "./CreateNightForm";
+import DeleteNightButton from "./DeleteNightButton";
+import { PlayersAdminSection } from "./PlayersAdminSection";
 
 export default async function Home() {
   const nights = await prisma.bouleNight.findMany({
     orderBy: { date: "asc" },
+    include: {
+      attendance: {
+        where: { present: true },
+      },
+    },
   });
 
   return (
@@ -33,12 +40,31 @@ export default async function Home() {
                   className="flex items-start justify-between gap-3 rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900"
                 >
                   <div className="space-y-1">
-                    <h3 className="font-medium leading-snug">{night.name}</h3>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-medium leading-snug">{night.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/nights/${night.id}`}
+                          className="text-xs font-medium text-zinc-700 underline underline-offset-2 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+                        >
+                          Redigera
+                        </a>
+                        <DeleteNightButton id={night.id} />
+                      </div>
+                    </div>
                     <p className="text-xs text-zinc-600 dark:text-zinc-400">
                       {new Date(night.date).toLocaleString("sv-SE", {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })}
+                      {" "}
+                      · {night.type === "DAY" ? "Dag" : "Kväll"}
+                    </p>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                      {night.attendance.length} anmälda
+                      {typeof night.maxPlayers === "number" && night.maxPlayers > 0
+                        ? ` / max ${night.maxPlayers}`
+                        : ""}
                     </p>
                     {night.location && (
                       <p className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -59,6 +85,8 @@ export default async function Home() {
           <div className="space-y-4">
             <h2 className="text-lg font-medium">Ny boule-kväll</h2>
             <CreateNightForm />
+
+            <PlayersAdminSection />
           </div>
         </section>
       </main>

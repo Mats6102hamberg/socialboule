@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { name, date, location, description } = body ?? {};
+    const { name, date, location, description, type, maxPlayers } = body ?? {};
 
     if (!name || !date) {
       return NextResponse.json(
@@ -30,12 +30,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let parsedType: "DAY" | "EVENING" = "EVENING";
+    if (type === "DAY" || type === "EVENING") {
+      parsedType = type;
+    }
+
+    let parsedMaxPlayers: number | null = null;
+    if (typeof maxPlayers === "number" && Number.isFinite(maxPlayers) && maxPlayers > 0) {
+      parsedMaxPlayers = Math.floor(maxPlayers);
+    }
+
     const created = await prisma.bouleNight.create({
       data: {
         name,
         date: new Date(date),
         location: location ?? null,
         description: description ?? null,
+        type: parsedType,
+        maxPlayers: parsedMaxPlayers,
       },
     });
 

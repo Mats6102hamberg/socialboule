@@ -1,17 +1,70 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
-export function CreateNightForm() {
+interface EditNightFormProps {
+  id: string;
+}
+
+export function EditNightForm({
+  id,
+}: EditNightFormProps) {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [time, setTime] = useState("18:00");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"DAY" | "EVENING">("EVENING");
   const [maxPlayers, setMaxPlayers] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNight() {
+      try {
+        const res = await fetch(`/api/boule-nights/${id}`);
+        if (!res.ok) {
+          return;
+        }
+        const night = await res.json();
+        if (!cancelled && night) {
+          setName(night.name ?? "");
+          const iso = night.date as string;
+          if (iso) {
+            const d = new Date(iso);
+            const dateOnly = d.toISOString().slice(0, 10);
+            const timeOnly = d.toISOString().slice(11, 16);
+            setDate(dateOnly);
+            setTime(timeOnly || "18:00");
+          }
+          setLocation(night.location ?? "");
+          setDescription(night.description ?? "");
+          if (night.type === "DAY" || night.type === "EVENING") {
+            setType(night.type);
+          } else {
+            setType("EVENING");
+          }
+          if (typeof night.maxPlayers === "number" && Number.isFinite(night.maxPlayers)) {
+            setMaxPlayers(String(night.maxPlayers));
+          } else {
+            setMaxPlayers("");
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load boule night", e);
+      }
+    }
+
+    loadNight();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -26,8 +79,8 @@ export function CreateNightForm() {
 
     try {
       setSubmitting(true);
-      const res = await fetch("/api/boule-nights", {
-        method: "POST",
+      const res = await fetch(`/api/boule-nights/${id}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
@@ -43,20 +96,12 @@ export function CreateNightForm() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error || "Kunde inte skapa boule-kväll.");
+        setError(data?.error || "Kunde inte uppdatera boule-kvällen.");
         return;
       }
 
-      setName("");
-      setDate("");
-      setTime("");
-      setLocation("");
-      setDescription("");
-      setType("EVENING");
-      setMaxPlayers("");
-
-      // Enkel refresh av listan via page reload
-      window.location.reload();
+      router.push("/");
+      router.refresh();
     } catch (err) {
       console.error(err);
       setError("Ett oväntat fel inträffade.");
@@ -69,7 +114,7 @@ export function CreateNightForm() {
     <form
       onSubmit={handleSubmit}
       className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-      aria-label="Skapa ny boule-kväll"
+      aria-label="Redigera boule-kväll"
     >
       <div className="space-y-1">
         <label htmlFor="name" className="text-sm font-medium">
@@ -181,7 +226,7 @@ export function CreateNightForm() {
         disabled={submitting}
         className="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
-        {submitting ? "Skapar..." : "Skapa boule-kväll"}
+        {submitting ? "Sparar..." : "Spara ändringar"}
       </button>
     </form>
   );
