@@ -107,6 +107,14 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // Dubbelkolla inuti transaktionen för att undvika race conditions
+      const existingRound = await tx.round.findFirst({
+        where: { nightId: id, number: 2 },
+      });
+      if (existingRound) {
+        throw new Error("Round 2 already exists");
+      }
+
       const round = await tx.round.create({
         data: {
           nightId: id,

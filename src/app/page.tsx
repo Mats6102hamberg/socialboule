@@ -22,7 +22,8 @@ export default async function Home() {
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Boule-kvällar</h1>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Skapa och hantera boule-kvällar kopplade till din Vercel-databas.
+              Planera och administrera klubbens boule-kvällar. Skapa nya tillfällen, hantera
+              deltagare och följ upp närvaro.
             </p>
           </div>
         </header>

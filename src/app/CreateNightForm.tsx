@@ -9,6 +9,7 @@ export function CreateNightForm() {
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"DAY" | "EVENING">("EVENING");
+  const [drawMode, setDrawMode] = useState<"INDIVIDUAL" | "TEAM">("INDIVIDUAL");
   const [maxPlayers, setMaxPlayers] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export function CreateNightForm() {
           location: location || null,
           description: description || null,
           type,
+          drawMode,
           maxPlayers: maxPlayers ? Number.parseInt(maxPlayers, 10) : null,
         }),
       });
@@ -53,6 +55,7 @@ export function CreateNightForm() {
       setLocation("");
       setDescription("");
       setType("EVENING");
+      setDrawMode("INDIVIDUAL");
       setMaxPlayers("");
 
       // Enkel refresh av listan via page reload
@@ -128,6 +131,23 @@ export function CreateNightForm() {
             <option value="DAY">Dag</option>
           </select>
         </div>
+        <div className="space-y-1">
+          <label htmlFor="drawMode" className="text-sm font-medium">
+            Lottningsläge
+          </label>
+          <select
+            id="drawMode"
+            value={drawMode}
+            onChange={(e) => setDrawMode(e.target.value === "TEAM" ? "TEAM" : "INDIVIDUAL")}
+            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-0 transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 dark:border-zinc-700 dark:bg-zinc-900"
+          >
+            <option value="INDIVIDUAL">Individuell</option>
+            <option value="TEAM">Lagtävling</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label htmlFor="maxPlayers" className="text-sm font-medium">
             Max antal spelare (valfritt)

@@ -66,6 +66,14 @@ export async function POST(req: NextRequest) {
 
     // Create round, matches, teams, and match players in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      // Dubbelkolla inuti transaktionen för att undvika race conditions
+      const existingRound = await tx.round.findFirst({
+        where: { nightId: id, number: 1 },
+      });
+      if (existingRound) {
+        throw new Error("Round 1 already exists");
+      }
+
       const round = await tx.round.create({
         data: {
           nightId: id,

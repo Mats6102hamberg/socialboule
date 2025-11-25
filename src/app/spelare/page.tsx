@@ -15,9 +15,10 @@ export default async function PlayerViewPage() {
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
         <header className="space-y-2 text-center sm:text-left">
-          <h1 className="text-2xl font-semibold tracking-tight">Boule-kvällar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Kommande boule-kvällar</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Den här sidan är för spelare. Här ser du bara information om kommande boule-kvällar.
+            Den här sidan är avsedd för spelare. Här visas planerade boule-kvällar samt
+            grundläggande information om varje tillfälle.
           </p>
         </header>
 

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { name, date, location, description, type, maxPlayers } = body ?? {};
+    const { name, date, location, description, type, drawMode, maxPlayers } = body ?? {};
 
     if (!name || !date) {
       return NextResponse.json(
@@ -33,6 +33,11 @@ export async function POST(req: NextRequest) {
     let parsedType: "DAY" | "EVENING" = "EVENING";
     if (type === "DAY" || type === "EVENING") {
       parsedType = type;
+    }
+
+    let parsedDrawMode: "INDIVIDUAL" | "TEAM" = "INDIVIDUAL";
+    if (drawMode === "INDIVIDUAL" || drawMode === "TEAM") {
+      parsedDrawMode = drawMode;
     }
 
     let parsedMaxPlayers: number | null = null;
@@ -47,6 +52,7 @@ export async function POST(req: NextRequest) {
         location: location ?? null,
         description: description ?? null,
         type: parsedType,
+        drawMode: parsedDrawMode,
         maxPlayers: parsedMaxPlayers,
       },
     });

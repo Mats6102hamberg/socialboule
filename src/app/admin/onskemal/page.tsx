@@ -12,7 +12,8 @@ export default async function PlayRequestsAdminPage() {
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Önskemål om speldagar</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Den här sidan är för arrangören. Här ser du de senaste önskemålen som spelare skickat in.
+            Den här sidan är avsedd för arrangören. Här visas de senaste önskemålen om
+            speldagar som spelare har skickat in via formuläret.
           </p>
         </header>
 

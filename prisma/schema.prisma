@@ -22,6 +22,7 @@ model BouleNight {
   location    String?
   description String?
   type        NightType     @default(EVENING)
+  drawMode    DrawMode      @default(INDIVIDUAL)
   maxPlayers  Int?
   rounds      Round[]
   matches     Match[]
@@ -37,6 +38,7 @@ model Player {
 
   matchPlayers MatchPlayer[]
   attendance   NightAttendance[]
+  teamMemberships TeamMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,6 +114,10 @@ model MatchTeam {
 
   side      TeamSide
 
+  // För laglottning: koppla till ett fast lag
+  team      Team?     @relation(fields: [teamId], references: [id])
+  teamId    String?
+
   players   MatchPlayer[]
 }
 
@@ -144,4 +150,36 @@ enum TeamSide {
 enum NightType {
   DAY
   EVENING
+}
+
+enum DrawMode {
+  INDIVIDUAL  // Spelare lottas ihop till nya lag varje runda
+  TEAM        // Fasta lag tävlar mot varandra
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  
+  members   TeamMember[]
+  
+  // Lag kan kopplas till matcher via MatchTeam
+  matchTeams MatchTeam[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId    String
+  
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([teamId, playerId])
 }
