@@ -3,6 +3,8 @@ import { CreateNightForm } from "./CreateNightForm";
 import DeleteNightButton from "./DeleteNightButton";
 import { PlayersAdminSection } from "./PlayersAdminSection";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const nights = await prisma.bouleNight.findMany({
     orderBy: { date: "asc" },
