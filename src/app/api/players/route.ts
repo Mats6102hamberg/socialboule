@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, handleAuthError } from "@/lib/auth";
 import { sanitizeString } from "@/lib/sanitize";
 
 export async function GET() {
@@ -20,13 +19,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  // Only admins can create players
-  try {
-    await requireAdmin();
-  } catch (error) {
-    return handleAuthError(error);
-  }
-
+  // TODO: restore admin protection when demo är över
   try {
     const body = await req.json();
     const { name } = body ?? {};

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 interface RouteContext {
   params: Promise<{
@@ -28,13 +27,7 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  // Only admins can delete players
-  try {
-    await requireAdmin();
-  } catch (error) {
-    return handleAuthError(error);
-  }
-
+  // TODO: add auth again after demo
   const { id } = await context.params;
 
   try {
