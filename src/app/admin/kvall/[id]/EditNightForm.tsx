@@ -96,7 +96,7 @@ export function EditNightForm({
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error || "Kunde inte uppdatera boule-kvällen.");
+        setError(data?.error || "Kunde inte uppdatera Pétanque Crash.");
         return;
       }
 
@@ -114,7 +114,7 @@ export function EditNightForm({
     <form
       onSubmit={handleSubmit}
       className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-      aria-label="Redigera boule-kväll"
+      aria-label="Redigera Pétanque Crash"
     >
       <div className="space-y-1">
         <label htmlFor="name" className="text-sm font-medium">

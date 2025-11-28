@@ -11,7 +11,7 @@ export default function DeleteNightButton({ id }: Props) {
 
   async function handleClick() {
     if (loading) return;
-    const confirmed = window.confirm("Ta bort den här boule-kvällen?");
+    const confirmed = window.confirm("Ta bort denna Pétanque Crash?");
     if (!confirmed) return;
 
     try {
@@ -23,10 +23,10 @@ export default function DeleteNightButton({ id }: Props) {
       if (!res.ok) {
         const body = await res.text();
         console.error("Failed to delete night", res.status, body);
-        alert(body || "Kunde inte ta bort boule-kvällen. Försök igen.");
+        alert(body || "Kunde inte ta bort. Försök igen.");
         return;
       }
-      alert("Boule-kvällen är borttagen.");
+      alert("Pétanque Crash borttagen.");
       window.location.reload();
     } finally {
       setLoading(false);
@@ -38,7 +38,7 @@ export default function DeleteNightButton({ id }: Props) {
       type="button"
       onClick={handleClick}
       disabled={loading}
-      aria-label="Ta bort boule-kväll"
+      aria-label="Ta bort Pétanque Crash"
       className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-red-500/60 text-[11px] text-red-600 hover:bg-red-500/10 disabled:opacity-50"
     >
       🗑

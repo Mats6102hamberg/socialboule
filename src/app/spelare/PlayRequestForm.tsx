@@ -58,7 +58,7 @@ export function PlayRequestForm() {
     >
       <h2 className="text-base font-medium">Önskemål om speldagar</h2>
       <p className="text-xs text-zinc-600 dark:text-zinc-400">
-        Här kan du önska vilka datum du gärna vill spela. Arrangören använder detta när nya boule-kvällar planeras.
+        Här kan du önska vilka datum du gärna vill spela. Arrangören använder detta när nya Pétanque Crash planeras.
       </p>
 
       <div className="space-y-1">

@@ -25,7 +25,7 @@ export default async function TeamsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Lag</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Skapa och hantera fasta lag för lagtävlingar. Lagen kan användas vid
-            laglottning på boule-kvällar.
+            laglottning på Pétanque Crash-event.
           </p>
         </header>
 

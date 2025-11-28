@@ -17,9 +17,9 @@ export default async function PlayerViewPage() {
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
         <header className="space-y-2 text-center sm:text-left">
-          <h1 className="text-2xl font-semibold tracking-tight">Kommande boule-kvällar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Kommande Pétanque Crash</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Den här sidan är avsedd för spelare. Här visas planerade boule-kvällar samt
+            Den här sidan är avsedd för spelare. Här visas planerade Pétanque Crash-event samt
             grundläggande information om varje tillfälle.
           </p>
         </header>
@@ -27,7 +27,7 @@ export default async function PlayerViewPage() {
         <section className="space-y-6">
           {nights.length === 0 ? (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Inga boule-kvällar är publicerade ännu. Fråga arrangören om mer information.
+              Inga Pétanque Crash är publicerade ännu. Fråga arrangören om mer information.
             </p>
           ) : (
             <div className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">

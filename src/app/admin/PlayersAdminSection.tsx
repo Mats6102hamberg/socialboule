@@ -11,6 +11,7 @@ export function PlayersAdminSection() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,13 +64,35 @@ export function PlayersAdminSection() {
     }
   }
 
+  async function handleDelete(playerId: string, playerName: string) {
+    if (!confirm(`Är du säker på att du vill ta bort ${playerName}?`)) return;
+
+    setDeletingId(playerId);
+    try {
+      const res = await fetch(`/api/players/${playerId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json();
+        alert(body.error || "Kunde inte ta bort spelaren.");
+        return;
+      }
+      setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    } catch (e) {
+      console.error("Failed to delete player", e);
+      alert("Tekniskt fel vid borttagning av spelare.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <section className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-medium">Spelare</h2>
       </div>
       <p className="text-xs text-zinc-600 dark:text-zinc-400">
-        Lägg till spelare som kan vara med på dina boule-kvällar.
+        Lägg till spelare som kan vara med på dina Pétanque Crash-event.
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -101,6 +124,14 @@ export function PlayersAdminSection() {
               className="flex items-center justify-between rounded border border-zinc-100 bg-zinc-50 px-2 py-1 text-xs dark:border-zinc-800 dark:bg-zinc-900"
             >
               <span>{player.name}</span>
+              <button
+                type="button"
+                onClick={() => handleDelete(player.id, player.name)}
+                disabled={deletingId === player.id}
+                className="ml-2 rounded px-2 py-0.5 text-xs text-red-600 transition hover:bg-red-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
+              >
+                {deletingId === player.id ? "Tar bort..." : "Ta bort"}
+              </button>
             </div>
           ))
         )}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 interface RouteContext {
   params: Promise<{
@@ -23,5 +24,37 @@ export async function GET(_request: Request, context: RouteContext) {
   } catch (error) {
     console.error(`Fel vid hämtning av spelare med ID ${id}:`, error);
     return NextResponse.json({ error: "Internt serverfel" }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  // Only admins can delete players
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
+  }
+
+  const { id } = await context.params;
+
+  try {
+    // Check if player exists
+    const player = await prisma.player.findUnique({
+      where: { id },
+    });
+
+    if (!player) {
+      return NextResponse.json({ error: "Spelare hittades inte" }, { status: 404 });
+    }
+
+    // Delete the player
+    await prisma.player.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Spelare borttagen" }, { status: 200 });
+  } catch (error) {
+    console.error(`Fel vid borttagning av spelare med ID ${id}:`, error);
+    return NextResponse.json({ error: "Kunde inte ta bort spelaren. Spelaren kan ha kopplingar till matcher." }, { status: 500 });
   }
 }

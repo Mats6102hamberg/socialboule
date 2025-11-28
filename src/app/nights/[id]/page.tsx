@@ -156,9 +156,9 @@ export default async function NightEditPage({ params }: PageProps) {
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Redigera boule-kväll</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Redigera Pétanque Crash</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Justera uppgifter, närvaro och matcher för vald boule-kväll och spara ändringarna
+            Justera uppgifter, närvaro och matcher för vald Pétanque Crash och spara ändringarna
             nedan.
           </p>
         </header>

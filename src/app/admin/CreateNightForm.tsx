@@ -45,7 +45,7 @@ export function CreateNightForm() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error || "Kunde inte skapa boule-kväll.");
+        setError(data?.error || "Kunde inte skapa Pétanque Crash.");
         return;
       }
 
@@ -72,7 +72,7 @@ export function CreateNightForm() {
     <form
       onSubmit={handleSubmit}
       className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-      aria-label="Skapa ny boule-kväll"
+      aria-label="Skapa ny Pétanque Crash"
     >
       <div className="space-y-1">
         <label htmlFor="name" className="text-sm font-medium">
@@ -228,7 +228,7 @@ export function CreateNightForm() {
         disabled={submitting}
         className="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
-        {submitting ? "Skapar..." : "Skapa boule-kväll"}
+        {submitting ? "Skapar..." : "Skapa Pétanque Crash"}
       </button>
     </form>
   );

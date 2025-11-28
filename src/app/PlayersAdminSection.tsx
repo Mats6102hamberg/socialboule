@@ -69,7 +69,7 @@ export function PlayersAdminSection() {
         <h2 className="text-lg font-medium">Spelare</h2>
       </div>
       <p className="text-xs text-zinc-600 dark:text-zinc-400">
-        Lägg till spelare som kan vara med på dina boule-kvällar.
+        Lägg till spelare som kan vara med på dina Pétanque Crash-event.
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center">

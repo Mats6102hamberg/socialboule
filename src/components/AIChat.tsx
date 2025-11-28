@@ -12,7 +12,7 @@ export function AIChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hej! Jag är din AI-assistent för Boule-klubben. Jag kan hjälpa dig med:\n\n• Kommande kvällar och anmälningar\n• Din statistik och resultat\n• Spelarkemi och rekommendationer\n• Frågor om matcher och poäng\n\nVad vill du veta?",
+      content: "Hej! Jag är din AI-assistent för Pétanque Crash. Jag kan hjälpa dig med:\n\n• Kommande event och anmälningar\n• Din statistik och resultat\n• Spelarkemi och rekommendationer\n• Frågor om matcher och poäng\n\nVad vill du veta?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -117,7 +117,7 @@ export function AIChat() {
               </div>
               <div className="text-white">
                 <h3 className="text-sm font-semibold">AI-Assistent</h3>
-                <p className="text-xs opacity-90">Boule-klubben</p>
+                <p className="text-xs opacity-90">Pétanque Crash</p>
               </div>
             </div>
             <button

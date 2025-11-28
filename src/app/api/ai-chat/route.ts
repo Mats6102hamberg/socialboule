@@ -15,7 +15,7 @@ interface Message {
 const functions = [
   {
     name: "get_upcoming_nights",
-    description: "Hämtar kommande boule-kvällar",
+    description: "Hämtar kommande Pétanque Crash-event",
     parameters: {
       type: "object",
       properties: {
@@ -350,14 +350,14 @@ export async function POST(req: NextRequest) {
     // System message to set context
     const systemMessage = {
       role: "system",
-      content: `Du är en hjälpsam AI-assistent för Boule-klubben. Du hjälper medlemmar med:
-- Information om kommande boule-kvällar
+      content: `Du är en hjälpsam AI-assistent för Pétanque Crash. Du hjälper medlemmar med:
+- Information om kommande Pétanque Crash-event
 - Statistik och resultat för spelare
 - Spelkemi och rekommendationer för lagsammansättning
 - Svar på frågor om matcher och turneringar
 
 Var vänlig, hjälpsam och entusiastisk om boule. Svara alltid på svenska.
-Om användaren frågar om något du inte har tillgång till, förklara vad du kan hjälpa till med istället.`,
+`,
     };
 
     const allMessages = [systemMessage, ...messages];

@@ -158,9 +158,9 @@ export default async function NightEditPage({ params }: PageProps) {
         <header className="space-y-2">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-tight">Redigera boule-kväll</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Redigera Pétanque Crash</h1>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Justera uppgifter, närvaro och matcher för vald boule-kväll och spara ändringarna
+                Justera uppgifter, närvaro och matcher för vald Pétanque Crash och spara ändringarna
                 nedan.
               </p>
             </div>
