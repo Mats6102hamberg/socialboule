@@ -58,6 +58,10 @@ model BouleNight {
   rounds      Round[]
   matches     Match[]
   attendance  NightAttendance[]
+  
+  // Koppling till klubb (valfri för bakåtkompatibilitet)
+  club        Club?         @relation("ClubNights", fields: [clubId], references: [id])
+  clubId      String?
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -75,6 +79,7 @@ model Player {
   roundByes   RoundBye[]
   ranking    Ranking?
   favorites  Favorite[]
+  clubs      ClubPlayer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -284,4 +289,49 @@ model Ranking {
 
   updatedAt     DateTime @updatedAt
   createdAt     DateTime @default(now())
+}
+
+// Klubb/Förening - varje klubb har sina egna admins, spelare och events
+model Club {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique  // URL-vänligt namn, t.ex. "stockholms-petanque"
+  description String?
+  location    String?  // Stad/region
+  
+  admins      ClubAdmin[]
+  players     ClubPlayer[]
+  nights      BouleNight[]  @relation("ClubNights")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Klubb-admin - kan logga in och hantera sin klubbs events
+model ClubAdmin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  
+  club         Club     @relation(fields: [clubId], references: [id])
+  clubId       String
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Koppling mellan spelare och klubb
+model ClubPlayer {
+  id        String   @id @default(cuid())
+  
+  club      Club     @relation(fields: [clubId], references: [id])
+  clubId    String
+  
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([clubId, playerId])
 }

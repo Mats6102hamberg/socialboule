@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { name, date, location, description, type, drawMode, maxPlayers } = body ?? {};
+    const { name, date, location, description, type, drawMode, maxPlayers, clubId } = body ?? {};
 
     if (!name || !date) {
       return NextResponse.json(
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         type: parsedType,
         drawMode: parsedDrawMode,
         maxPlayers: parsedMaxPlayers,
+        clubId: clubId || null,
       },
     });
 
