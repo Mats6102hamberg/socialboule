@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 // GET /api/teams - Hämta alla lag
 export async function GET() {
@@ -27,6 +28,13 @@ export async function GET() {
 
 // POST /api/teams - Skapa nytt lag
 export async function POST(req: NextRequest) {
+  try {
+    // Require admin authentication for creating teams
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
+  }
+
   try {
     const body = await req.json();
     const { name, playerIds } = body as {

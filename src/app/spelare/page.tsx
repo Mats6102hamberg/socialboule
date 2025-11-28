@@ -11,6 +11,8 @@ export default async function PlayerViewPage() {
     },
   });
 
+  type NightWithAttendance = (typeof nights)[number];
+
   return (
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
@@ -29,7 +31,7 @@ export default async function PlayerViewPage() {
             </p>
           ) : (
             <div className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              {nights.map((night: any) => (
+              {nights.map((night: NightWithAttendance) => (
                 <article
                   key={night.id}
                   className="space-y-1 rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900"

@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  const idx = segments.lastIndexOf("boule-nights");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
-export async function GET(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
   try {
@@ -26,6 +23,11 @@ export async function GET(req: NextRequest) {
             players: {
               include: { player: true },
             },
+          },
+        },
+        resultConfirmations: {
+          include: {
+            player: true,
           },
         },
       },

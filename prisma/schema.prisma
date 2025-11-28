@@ -10,6 +10,37 @@ generator client {
   output        = "../src/generated"
 }
 
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String?
+  favorites Favorite[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+
+  userId    String
+  matchId   String?
+  playerId  String?
+  teamId    String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match     Match?   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player    Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, matchId])
+  @@unique([userId, playerId])
+  @@unique([userId, teamId])
+  @@index([userId])
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -35,10 +66,15 @@ model BouleNight {
 model Player {
   id        String   @id @default(cuid())
   name      String
+  isAdmin   Boolean  @default(false)
 
   matchPlayers MatchPlayer[]
   attendance   NightAttendance[]
   teamMemberships TeamMember[]
+  resultConfirmations MatchResultConfirmation[]
+  roundByes   RoundBye[]
+  ranking    Ranking?
+  favorites  Favorite[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -80,6 +116,7 @@ model Round {
   number    Int         // 1, 2, 3
 
   matches   Match[]
+  byes      RoundBye[]
 
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -99,11 +136,46 @@ model Match {
   homeScore   Int?
   awayScore   Int?
   status      MatchStatus  @default(SCHEDULED)
+  walkoverWinner TeamSide?
 
   teams       MatchTeam[]
+  resultConfirmations MatchResultConfirmation[]
+  favorites  Favorite[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+model MatchResultConfirmation {
+  id        String                     @id @default(cuid())
+
+  match     Match                      @relation(fields: [matchId], references: [id])
+  matchId   String
+
+  player    Player                     @relation(fields: [playerId], references: [id])
+  playerId  String
+
+  reportedHomeScore Int
+  reportedAwayScore Int
+  reportedWalkoverSide TeamSide?
+  status    ResultConfirmationStatus   @default(PENDING)
+
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  @@unique([matchId, playerId], name: "MatchConfirmation_unique")
+}
+
+model RoundBye {
+  id        String   @id @default(cuid())
+
+  round     Round    @relation(fields: [roundId], references: [id])
+  roundId   String
+
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String
+
+  createdAt DateTime @default(now())
 }
 
 model MatchTeam {
@@ -140,6 +212,13 @@ enum MatchStatus {
   IN_PROGRESS
   COMPLETED
   CANCELED
+  WALKOVER
+}
+
+enum ResultConfirmationStatus {
+  PENDING
+  CONFIRMED
+  DISPUTED
 }
 
 enum TeamSide {
@@ -165,6 +244,8 @@ model Team {
   
   // Lag kan kopplas till matcher via MatchTeam
   matchTeams MatchTeam[]
+  ranking   Ranking?
+  favorites Favorite[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -182,4 +263,25 @@ model TeamMember {
   createdAt DateTime @default(now())
   
   @@unique([teamId, playerId])
+}
+
+model Ranking {
+  id            String   @id @default(uuid())
+
+  playerId      String?  @unique
+  teamId        String?  @unique
+  player        Player?  @relation(fields: [playerId], references: [id])
+  team          Team?    @relation(fields: [teamId], references: [id])
+
+  simplePoints  Int      @default(0)
+  simpleRankPos Int?
+
+  eloRating     Int      @default(1500)
+  eloRankPos    Int?
+
+  matchesPlayed Int      @default(0)
+  matchesWon    Int      @default(0)
+
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
 }

@@ -1,17 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildTeammateSet, pickBalancedPairs } from "@/lib/draw-helpers";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  const idx = segments.lastIndexOf("boule-nights");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+type PlayerStat = {
+  playerId: string;
+  wins: number;
+  pointsDiff: number;
+  matches: number;
+};
 
-export async function POST(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {
@@ -55,10 +67,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Aggregate per-player performance from round 1
-    const playerStats = new Map<
-      string,
-      { playerId: string; wins: number; pointsDiff: number; matches: number }
-    >();
+    const playerStats = new Map<string, PlayerStat>();
 
     for (const match of night.matches) {
       for (const team of match.teams) {
@@ -106,6 +115,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const teammateSet = buildTeammateSet(night.matches);
+
     const result = await prisma.$transaction(async (tx) => {
       // Dubbelkolla inuti transaktionen för att undvika race conditions
       const existingRound = await tx.round.findFirst({
@@ -151,20 +162,25 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Simple pairing: top 2 in group vs next 2
-        for (let p = 0; p < 2; p++) {
+        const pairing = pickBalancedPairs(group, teammateSet);
+        const [homePair, awayPair] = pairing;
+
+        for (const pIndex of homePair) {
+          const playerId = group[pIndex].playerId;
           await tx.matchPlayer.create({
             data: {
               matchTeamId: homeTeam.id,
-              playerId: group[p].playerId,
+              playerId,
             },
           });
         }
-        for (let p = 2; p < 4; p++) {
+
+        for (const pIndex of awayPair) {
+          const playerId = group[pIndex].playerId;
           await tx.matchPlayer.create({
             data: {
               matchTeamId: awayTeam.id,
-              playerId: group[p].playerId,
+              playerId,
             },
           });
         }

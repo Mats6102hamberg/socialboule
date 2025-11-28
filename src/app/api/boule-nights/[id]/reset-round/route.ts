@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  const idx = segments.lastIndexOf("boule-nights");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id: nightId } = params;
 
-export async function POST(req: NextRequest) {
-  const nightId = getIdFromRequest(req);
-  if (!nightId) {
-    return NextResponse.json({ error: "Missing night id" }, { status: 400 });
+  if (!nightId || typeof nightId !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {

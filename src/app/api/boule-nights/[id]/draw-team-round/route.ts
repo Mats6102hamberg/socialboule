@@ -1,24 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  const idx = segments.lastIndexOf("boule-nights");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 /**
  * POST /api/boule-nights/[id]/draw-team-round
- * 
+ *
  * Lottar en ny omgång med laglottning.
  * Kräver att kvällen har drawMode = TEAM.
  * Tar emot teamIds i body för vilka lag som ska delta.
  */
-export async function POST(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {

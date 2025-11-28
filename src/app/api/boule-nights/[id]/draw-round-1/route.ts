@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  // .../api/boule-nights/[id]/draw-round-1
-  const idx = segments.lastIndexOf("boule-nights");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
-export async function POST(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {
@@ -81,7 +84,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const matchesCreated = [] as any[];
+      const matchesCreated: { matchId: string; lane: number }[] = [];
       let lane = 1;
 
       for (let i = 0; i < shuffled.length; i += 4) {

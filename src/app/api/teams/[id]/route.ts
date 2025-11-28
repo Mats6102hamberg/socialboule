@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  const idx = segments.lastIndexOf("teams");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 // GET /api/teams/[id] - Hämta ett lag
-export async function GET(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
   try {
@@ -42,10 +40,20 @@ export async function GET(req: NextRequest) {
 }
 
 // PUT /api/teams/[id] - Uppdatera lag (namn och medlemmar)
-export async function PUT(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {
@@ -58,7 +66,7 @@ export async function PUT(req: NextRequest) {
     // Uppdatera i en transaktion
     const team = await prisma.$transaction(async (tx) => {
       // Uppdatera namn om det finns
-      const updatedTeam = await tx.team.update({
+      await tx.team.update({
         where: { id },
         data: name ? { name: name.trim() } : {},
       });
@@ -105,10 +113,20 @@ export async function PUT(req: NextRequest) {
 }
 
 // DELETE /api/teams/[id] - Ta bort lag
-export async function DELETE(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {

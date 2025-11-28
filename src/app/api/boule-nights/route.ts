@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -18,6 +19,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    // Require admin authentication for creating nights
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
+  }
+
   try {
     const body = await req.json();
 

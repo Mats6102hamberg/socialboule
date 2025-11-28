@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Boule-kväll – utvecklingssetup
 
-## Getting Started
+Det här är ett Next.js 16-projekt med Prisma/PostgreSQL-backend för att planera och administrera boule-kvällar.
 
-First, run the development server:
+### Förkrav
+
+- Node.js 20+
+- PostgreSQL-databas (t.ex. Neon) med giltig `DATABASE_URL`
+
+### Installation
+
+1. Installera beroenden:
+   ```bash
+   npm install
+   ```
+2. Lägg till en `.env` med dina hemligheter (se `.env.example`).
+3. Generera Prisma-klienten:
+   ```bash
+   npx prisma generate
+   ```
+4. Starta dev-servern:
+   ```bash
+   npm run dev
+   ```
+
+### Tillgängliga script
+
+| Kommando        | Beskrivning                     |
+| --------------- | ------------------------------- |
+| `npm run dev`   | Startar Next.js i dev-läge      |
+| `npm run build` | Bygger produktion               |
+| `npm run start` | Startar byggd app               |
+| `npm run lint`  | ESLint enligt Next core vitals  |
+
+### Prisma & databas
+
+- Schema: `prisma/schema.prisma`
+- Migrationer: `prisma/migrations`
+- CLIs: `npx prisma migrate dev`, `npx prisma studio`
+
+#### Senaste schemaändringar
+
+Kör följande efter att du har uppdaterat koden för att få in nya tabellerna för resultatbekräftelser och bye-hantering:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx prisma migrate dev --name add-result-confirmations-and-byes
+npx prisma generate
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Om du kör mot en delad databas (t.ex. staging/prod) – generera SQL och applicera manuellt:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx prisma migrate deploy
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Miljövariabler
 
-## Learn More
+| Variabel        | Beskrivning                         |
+| --------------- | ----------------------------------- |
+| `DATABASE_URL`  | Postgres-anslutning (kräver SSL)    |
 
-To learn more about Next.js, take a look at the following resources:
+### Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Bygg med `npm run build` och starta med `npm run start`. Miljövariabler måste vara satta på målmiljön.

@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildTeammateSet, pickBalancedPairs, splitIntoGroupsWithByes } from "@/lib/draw-helpers";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
 
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  const idx = segments.lastIndexOf("boule-nights");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
-export async function POST(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {
@@ -22,7 +27,7 @@ export async function POST(req: NextRequest) {
         matches: {
           where: {
             round: { number: { in: [1, 2] } },
-            status: "COMPLETED",
+            status: { in: ["COMPLETED", "WALKOVER"] },
           },
           include: {
             teams: {
@@ -95,12 +100,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (rankedPlayers.length % 4 !== 0) {
+    const teammateSet = buildTeammateSet(night.matches);
+    const { groups, byes } = splitIntoGroupsWithByes(rankedPlayers, 4);
+
+    if (groups.length === 0) {
       return NextResponse.json(
-        {
-          error:
-            "Player count with results must be a multiple of 4 for round 3 draw (e.g. 4, 8, 12)",
-        },
+        { error: "Need at least 4 players with results to draw round 3" },
         { status: 400 },
       );
     }
@@ -124,9 +129,8 @@ export async function POST(req: NextRequest) {
       const matchesCreated: { matchId: string; lane: number }[] = [];
       let lane = 1;
 
-      for (let i = 0; i < rankedPlayers.length; i += 4) {
-        const group = rankedPlayers.slice(i, i + 4);
-        if (group.length < 4) break;
+      for (const group of groups) {
+        if (group.length < 4) continue;
 
         const match = await tx.match.create({
           data: {
@@ -150,20 +154,24 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Simple pairing: top 2 in group vs next 2
-        for (let p = 0; p < 2; p++) {
+        const pairing = pickBalancedPairs(group, teammateSet);
+        const [homePair, awayPair] = pairing;
+
+        for (const pIndex of homePair) {
+          const playerId = group[pIndex].playerId;
           await tx.matchPlayer.create({
             data: {
               matchTeamId: homeTeam.id,
-              playerId: group[p].playerId,
+              playerId,
             },
           });
         }
-        for (let p = 2; p < 4; p++) {
+        for (const pIndex of awayPair) {
+          const playerId = group[pIndex].playerId;
           await tx.matchPlayer.create({
             data: {
               matchTeamId: awayTeam.id,
-              playerId: group[p].playerId,
+              playerId,
             },
           });
         }
@@ -172,7 +180,20 @@ export async function POST(req: NextRequest) {
         lane += 1;
       }
 
-      return { roundId: round.id, matches: matchesCreated };
+      if (byes.length > 0) {
+        await tx.roundBye.createMany({
+          data: byes.map((player) => ({
+            roundId: round.id,
+            playerId: player.playerId,
+          })),
+        });
+      }
+
+      return {
+        roundId: round.id,
+        matches: matchesCreated,
+        byes: byes.map((player) => player.playerId),
+      };
     });
 
     const referer = req.headers.get("referer");

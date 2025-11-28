@@ -20,6 +20,7 @@ export function AttendanceSection() {
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [maxPlayers, setMaxPlayers] = useState<number | null>(null);
+  const [lastKnownUpdatedAt, setLastKnownUpdatedAt] = useState<string | null>(null);
   const pathname = usePathname();
 
   // Extract night id from URL: /nights/[id]
@@ -40,9 +41,16 @@ export function AttendanceSection() {
         if (!playersRes.ok) return;
         const playersData = (await playersRes.json()) as Player[];
 
-        let attendanceMap: Record<string, boolean> = {};
+        const attendanceMap: Record<string, boolean> = {};
+        let updatedAt: string | null = null;
         if (attendanceRes.ok) {
-          const attData = (await attendanceRes.json()) as NightAttendanceItem[];
+          const attResponse = await attendanceRes.json();
+          // New API format returns { attendance, updatedAt }
+          const attData = Array.isArray(attResponse)
+            ? attResponse
+            : (attResponse.attendance as NightAttendanceItem[]);
+          updatedAt = attResponse.updatedAt ?? null;
+
           for (const item of attData) {
             attendanceMap[item.playerId] = item.present;
           }
@@ -60,6 +68,7 @@ export function AttendanceSection() {
           setPlayers(playersData);
           setAttendance(attendanceMap);
           setMaxPlayers(max);
+          setLastKnownUpdatedAt(updatedAt);
         }
       } catch (e) {
         console.error("Failed to load attendance data", e);
@@ -89,20 +98,41 @@ export function AttendanceSection() {
     setLoading(true);
     try {
       const playerIds = Object.entries(attendance)
-        .filter(([_, present]) => present)
+        .filter(([, present]) => present)
         .map(([id]) => id);
 
       const res = await fetch(`/api/boule-nights/${nightId}/attendance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerIds }),
+        body: JSON.stringify({
+          playerIds,
+          lastKnownUpdatedAt,
+        }),
       });
 
       if (!res.ok) {
+        // Handle conflict (409) specially
+        if (res.status === 409) {
+          const errorData = await res.json();
+          alert(
+            errorData.error ||
+              "Närvarolistan har ändrats av någon annan. Vänligen ladda om sidan."
+          );
+          // Reload the page to get the latest data
+          window.location.reload();
+          return;
+        }
+
         const body = await res.text();
         console.error("Failed to save attendance", res.status, body);
         alert("Kunde inte spara närvaro. Försök igen.");
         return;
+      }
+
+      // Update lastKnownUpdatedAt with the new timestamp from server
+      const result = await res.json();
+      if (result.updatedAt) {
+        setLastKnownUpdatedAt(result.updatedAt);
       }
 
       alert("Närvaro sparad.");

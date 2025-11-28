@@ -1,35 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { MatchStatus, ResultConfirmationStatus, TeamSide } from "@/generated/client";
 
-function getIdFromRequest(req: NextRequest): string | null {
-  const segments = req.nextUrl.pathname.split("/").filter(Boolean);
-  const idx = segments.lastIndexOf("matches");
-  if (idx === -1 || idx + 1 >= segments.length) return null;
-  return segments[idx + 1] ?? null;
-}
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
-export async function PATCH(req: NextRequest) {
-  const id = getIdFromRequest(req);
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
   try {
     const body = await req.json();
-    const { homeScore, awayScore } = body ?? {};
+    const { playerId, homeScore, awayScore, walkoverSide } = body ?? {};
 
-    if (
-      typeof homeScore !== "number" ||
-      typeof awayScore !== "number" ||
-      !Number.isFinite(homeScore) ||
-      !Number.isFinite(awayScore) ||
-      homeScore < 0 ||
-      awayScore < 0
-    ) {
-      return NextResponse.json(
-        { error: "homeScore and awayScore must be non-negative numbers" },
-        { status: 400 },
-      );
+    if (!playerId || typeof playerId !== "string") {
+      return NextResponse.json({ error: "playerId is required" }, { status: 400 });
+    }
+
+    if (walkoverSide && walkoverSide !== "HOME" && walkoverSide !== "AWAY") {
+      return NextResponse.json({ error: "Invalid walkoverSide" }, { status: 400 });
+    }
+
+    // Validate scores based on walkover status
+    if (walkoverSide) {
+      // For walkovers, validate that scores are exactly 13-0 or 0-13
+      const expectedHomeScore = walkoverSide === "HOME" ? 13 : 0;
+      const expectedAwayScore = walkoverSide === "AWAY" ? 13 : 0;
+
+      if (
+        typeof homeScore === "number" &&
+        typeof awayScore === "number" &&
+        (homeScore !== expectedHomeScore || awayScore !== expectedAwayScore)
+      ) {
+        return NextResponse.json(
+          { error: `Walkover scores must be ${expectedHomeScore}-${expectedAwayScore}` },
+          { status: 400 }
+        );
+      }
+    } else {
+      // For regular matches, validate that scores are valid numbers
+      if (
+        typeof homeScore !== "number" ||
+        typeof awayScore !== "number" ||
+        !Number.isFinite(homeScore) ||
+        !Number.isFinite(awayScore) ||
+        homeScore < 0 ||
+        awayScore < 0
+      ) {
+        return NextResponse.json(
+          { error: "homeScore and awayScore must be non-negative numbers" },
+          { status: 400 },
+        );
+      }
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -41,6 +66,7 @@ export async function PATCH(req: NextRequest) {
               players: true,
             },
           },
+          resultConfirmations: true,
         },
       });
 
@@ -55,17 +81,99 @@ export async function PATCH(req: NextRequest) {
         throw new Error("TEAMS_NOT_FOUND");
       }
 
-      const homeWon = homeScore > awayScore;
-      const awayWon = awayScore > homeScore;
+      const participants = [...homeTeam.players, ...awayTeam.players];
+      const participantIds = participants.map((p) => p.playerId);
 
-      const updatedMatch = await tx.match.update({
-        where: { id: match.id },
-        data: {
-          homeScore,
-          awayScore,
-          status: "COMPLETED",
+      if (!participantIds.includes(playerId)) {
+        throw new Error("PLAYER_NOT_IN_MATCH");
+      }
+
+      const derivedHome = typeof homeScore === "number" ? homeScore : walkoverSide === "HOME" ? 13 : 0;
+      const derivedAway = typeof awayScore === "number" ? awayScore : walkoverSide === "AWAY" ? 13 : 0;
+
+      await tx.matchResultConfirmation.upsert({
+        where: { MatchConfirmation_unique: { matchId: id, playerId } },
+        create: {
+          matchId: id,
+          playerId,
+          reportedHomeScore: derivedHome,
+          reportedAwayScore: derivedAway,
+          reportedWalkoverSide: walkoverSide ?? null,
+        },
+        update: {
+          reportedHomeScore: derivedHome,
+          reportedAwayScore: derivedAway,
+          reportedWalkoverSide: walkoverSide ?? null,
+          status: ResultConfirmationStatus.PENDING,
         },
       });
+
+      const confirmations = await tx.matchResultConfirmation.findMany({
+        where: { matchId: id, playerId: { in: participantIds } },
+      });
+
+      if (confirmations.length < participantIds.length) {
+        return tx.match.findUnique({
+          where: { id },
+          include: {
+            teams: { include: { players: { include: { player: true } } } },
+            resultConfirmations: true,
+          },
+        });
+      }
+
+      const first = confirmations[0];
+      const allMatch = confirmations.every(
+        (conf) =>
+          conf.reportedHomeScore === first.reportedHomeScore &&
+          conf.reportedAwayScore === first.reportedAwayScore &&
+          conf.reportedWalkoverSide === first.reportedWalkoverSide,
+      );
+
+      if (!allMatch) {
+        await tx.matchResultConfirmation.updateMany({
+          where: { matchId: id },
+          data: { status: ResultConfirmationStatus.DISPUTED },
+        });
+
+        return tx.match.findUnique({
+          where: { id },
+          include: {
+            teams: { include: { players: { include: { player: true } } } },
+            resultConfirmations: true,
+          },
+        });
+      }
+
+      await tx.matchResultConfirmation.updateMany({
+        where: { matchId: id },
+        data: { status: ResultConfirmationStatus.CONFIRMED },
+      });
+
+      const updatedMatch = await tx.match.update({
+        where: { id },
+        data: {
+          homeScore: first.reportedHomeScore,
+          awayScore: first.reportedAwayScore,
+          status: first.reportedWalkoverSide ? MatchStatus.WALKOVER : MatchStatus.COMPLETED,
+          walkoverWinner: first.reportedWalkoverSide,
+        },
+        include: {
+          teams: {
+            include: {
+              players: true,
+            },
+          },
+          resultConfirmations: true,
+        },
+      });
+
+      const homeWon = first.reportedWalkoverSide
+        ? first.reportedWalkoverSide === TeamSide.HOME
+        : first.reportedHomeScore > first.reportedAwayScore;
+      const awayWon = first.reportedWalkoverSide
+        ? first.reportedWalkoverSide === TeamSide.AWAY
+        : first.reportedAwayScore > first.reportedHomeScore;
 
       const playerUpdates: Promise<unknown>[] = [];
 
@@ -74,8 +182,8 @@ export async function PATCH(req: NextRequest) {
           tx.matchPlayer.update({
             where: { id: mp.id },
             data: {
-              pointsFor: homeScore,
-              pointsAgainst: awayScore,
+              pointsFor: first.reportedHomeScore,
+              pointsAgainst: first.reportedAwayScore,
               won: homeWon,
             },
           }),
@@ -87,8 +195,8 @@ export async function PATCH(req: NextRequest) {
           tx.matchPlayer.update({
             where: { id: mp.id },
             data: {
-              pointsFor: awayScore,
-              pointsAgainst: homeScore,
+              pointsFor: first.reportedAwayScore,
+              pointsAgainst: first.reportedHomeScore,
               won: awayWon,
             },
           }),
@@ -107,6 +215,9 @@ export async function PATCH(req: NextRequest) {
     }
     if (error instanceof Error && error.message === "TEAMS_NOT_FOUND") {
       return NextResponse.json({ error: "Match teams not found" }, { status: 500 });
+    }
+    if (error instanceof Error && error.message === "PLAYER_NOT_IN_MATCH") {
+      return NextResponse.json({ error: "Player not part of this match" }, { status: 403 });
     }
 
     console.error("Error updating match result", error);
