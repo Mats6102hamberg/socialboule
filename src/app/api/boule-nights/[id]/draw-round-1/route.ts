@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, handleAuthError } from "@/lib/auth";
+import { createBalancedMatches, createDiverseMatches, createRandomMatches } from "@/lib/matchmaking";
 
 export async function POST(
   req: NextRequest,
@@ -60,11 +61,24 @@ export async function POST(
       );
     }
 
-    // Shuffle players
-    const shuffled = [...players];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // Get matchmaking mode from request body (default: balanced)
+    const body = await req.json().catch(() => ({}));
+    const matchmakingMode = body.mode || "balanced"; // balanced, diverse, or random
+
+    // Create matches using smart matchmaking
+    let matchPairings: Array<[string, string, string, string]>;
+
+    try {
+      if (matchmakingMode === "balanced") {
+        matchPairings = await createBalancedMatches(players, id);
+      } else if (matchmakingMode === "diverse") {
+        matchPairings = await createDiverseMatches(players, id);
+      } else {
+        matchPairings = createRandomMatches(players);
+      }
+    } catch (error) {
+      console.error("Matchmaking error, falling back to random:", error);
+      matchPairings = createRandomMatches(players);
     }
 
     // Create round, matches, teams, and match players in a transaction
@@ -87,10 +101,8 @@ export async function POST(
       const matchesCreated: { matchId: string; lane: number }[] = [];
       let lane = 1;
 
-      for (let i = 0; i < shuffled.length; i += 4) {
-        const group = shuffled.slice(i, i + 4);
-        if (group.length < 4) break;
-
+      // Create matches from smart matchmaking pairings
+      for (const [p1Id, p2Id, p3Id, p4Id] of matchPairings) {
         const match = await tx.match.create({
           data: {
             nightId: id,
@@ -113,23 +125,33 @@ export async function POST(
           },
         });
 
-        // first two players home, next two away
-        for (let p = 0; p < 2; p++) {
-          await tx.matchPlayer.create({
-            data: {
-              matchTeamId: homeTeam.id,
-              playerId: group[p].id,
-            },
-          });
-        }
-        for (let p = 2; p < 4; p++) {
-          await tx.matchPlayer.create({
-            data: {
-              matchTeamId: awayTeam.id,
-              playerId: group[p].id,
-            },
-          });
-        }
+        // Team 1 (HOME): player1 + player2
+        await tx.matchPlayer.create({
+          data: {
+            matchTeamId: homeTeam.id,
+            playerId: p1Id,
+          },
+        });
+        await tx.matchPlayer.create({
+          data: {
+            matchTeamId: homeTeam.id,
+            playerId: p2Id,
+          },
+        });
+
+        // Team 2 (AWAY): player3 + player4
+        await tx.matchPlayer.create({
+          data: {
+            matchTeamId: awayTeam.id,
+            playerId: p3Id,
+          },
+        });
+        await tx.matchPlayer.create({
+          data: {
+            matchTeamId: awayTeam.id,
+            playerId: p4Id,
+          },
+        });
 
         matchesCreated.push({ matchId: match.id, lane });
         lane += 1;
