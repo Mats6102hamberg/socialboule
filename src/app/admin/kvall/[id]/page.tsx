@@ -155,12 +155,24 @@ export default async function NightEditPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Redigera boule-kväll</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Justera uppgifter, närvaro och matcher för vald boule-kväll och spara ändringarna
-            nedan.
-          </p>
+        <header className="space-y-2">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight">Redigera boule-kväll</h1>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Justera uppgifter, närvaro och matcher för vald boule-kväll och spara ändringarna
+                nedan.
+              </p>
+            </div>
+            <a
+              href={`/nights/${nightId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              👁️ Spelare-vy
+            </a>
+          </div>
         </header>
 
         <EditNightForm id={nightId} />

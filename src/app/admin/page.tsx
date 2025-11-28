@@ -49,6 +49,14 @@ export default async function Home() {
                       <h3 className="font-medium leading-snug">{night.name}</h3>
                       <div className="flex items-center gap-2">
                         <a
+                          href={`/nights/${night.id}`}
+                          className="text-xs font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Spelare-vy →
+                        </a>
+                        <a
                           href={`/admin/kvall/${night.id}`}
                           className="text-xs font-medium text-zinc-700 underline underline-offset-2 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
                         >
