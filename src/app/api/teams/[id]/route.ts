@@ -5,9 +5,9 @@ import { requireAdmin, handleAuthError } from "@/lib/auth";
 // GET /api/teams/[id] - Hämta ett lag
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -42,9 +42,9 @@ export async function GET(
 // PUT /api/teams/[id] - Uppdatera lag (namn och medlemmar)
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -115,9 +115,9 @@ export async function PUT(
 // DELETE /api/teams/[id] - Ta bort lag
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });

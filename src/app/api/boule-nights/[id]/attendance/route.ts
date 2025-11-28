@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -45,12 +45,20 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  // Only admins should be able to modify attendance
+  const { requireAdmin, handleAuthError } = await import("@/lib/auth");
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
   }
 
   try {

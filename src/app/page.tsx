@@ -4,11 +4,12 @@ import { NightsList } from "./NightsList";
 import { PlayerStats } from "./PlayerStats";
 import { ChemistrySection } from "./ChemistrySection";
 import { Leaderboard } from "./Leaderboard";
+import { AIChat } from "@/components/AIChat";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const nights = await prisma.bouleNight.findMany({
+  const rawNights = await prisma.bouleNight.findMany({
     where: {
       date: { gte: new Date() },
     },
@@ -20,6 +21,24 @@ export default async function Home() {
       },
     },
   });
+
+  // Serialize dates for client component
+  const nights = rawNights.map((night) => ({
+    ...night,
+    date: night.date.toISOString(),
+    createdAt: night.createdAt.toISOString(),
+    updatedAt: night.updatedAt.toISOString(),
+    attendance: night.attendance.map((a) => ({
+      ...a,
+      createdAt: a.createdAt.toISOString(),
+      updatedAt: a.updatedAt.toISOString(),
+      player: {
+        ...a.player,
+        createdAt: a.player.createdAt.toISOString(),
+        updatedAt: a.player.updatedAt.toISOString(),
+      },
+    })),
+  }));
 
   const players = await prisma.player.findMany({
     orderBy: { name: "asc" },
@@ -58,6 +77,9 @@ export default async function Home() {
         {/* Topplista */}
         <Leaderboard />
       </main>
+
+      {/* AI Chat Assistant */}
+      <AIChat />
     </div>
   );
 }

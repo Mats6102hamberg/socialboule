@@ -4,9 +4,9 @@ import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -32,9 +32,9 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -96,9 +96,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });

@@ -1,13 +1,82 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const SESSION_COOKIE_NAME = "player_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
+// Get session secret from environment variable
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error("SESSION_SECRET environment variable is not set");
+  }
+  if (secret.length < 32) {
+    throw new Error("SESSION_SECRET must be at least 32 characters long");
+  }
+  return secret;
+}
+
 export interface Session {
   playerId: string;
   playerName?: string;
+}
+
+/**
+ * Sign session data with HMAC to prevent tampering
+ */
+function signSession(session: Session): string {
+  const sessionJson = JSON.stringify(session);
+  const secret = getSessionSecret();
+  const signature = createHmac("sha256", secret)
+    .update(sessionJson)
+    .digest("hex");
+
+  // Return format: signature.base64(sessionData)
+  return `${signature}.${Buffer.from(sessionJson).toString("base64")}`;
+}
+
+/**
+ * Verify and parse a signed session
+ * Returns null if signature is invalid or data is malformed
+ */
+function verifySession(signedSession: string): Session | null {
+  try {
+    const parts = signedSession.split(".");
+    if (parts.length !== 2) {
+      return null;
+    }
+
+    const [providedSignature, encodedData] = parts;
+    const sessionJson = Buffer.from(encodedData, "base64").toString("utf-8");
+
+    // Verify signature
+    const secret = getSessionSecret();
+    const expectedSignature = createHmac("sha256", secret)
+      .update(sessionJson)
+      .digest("hex");
+
+    // Use timing-safe comparison to prevent timing attacks
+    if (!timingSafeEqual(
+      Buffer.from(providedSignature),
+      Buffer.from(expectedSignature)
+    )) {
+      return null;
+    }
+
+    // Parse and return session
+    const session = JSON.parse(sessionJson) as Session;
+
+    // Validate session structure
+    if (!session.playerId || typeof session.playerId !== "string") {
+      return null;
+    }
+
+    return session;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -21,12 +90,7 @@ export async function getSession(): Promise<Session | null> {
     return null;
   }
 
-  try {
-    const session = JSON.parse(sessionCookie.value) as Session;
-    return session;
-  } catch {
-    return null;
-  }
+  return verifySession(sessionCookie.value);
 }
 
 /**
@@ -39,12 +103,7 @@ export function getSessionFromRequest(req: NextRequest): Session | null {
     return null;
   }
 
-  try {
-    const session = JSON.parse(sessionCookie.value) as Session;
-    return session;
-  } catch {
-    return null;
-  }
+  return verifySession(sessionCookie.value);
 }
 
 /**
@@ -52,9 +111,10 @@ export function getSessionFromRequest(req: NextRequest): Session | null {
  */
 export async function createSession(playerId: string, playerName?: string) {
   const session: Session = { playerId, playerName };
+  const signedSession = signSession(session);
   const cookieStore = await cookies();
 
-  cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(session), {
+  cookieStore.set(SESSION_COOKIE_NAME, signedSession, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

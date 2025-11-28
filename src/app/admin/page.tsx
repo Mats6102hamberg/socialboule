@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { CreateNightForm } from "./CreateNightForm";
 import DeleteNightButton from "./DeleteNightButton";
 import { PlayersAdminSection } from "./PlayersAdminSection";
+import { AIChat } from "@/components/AIChat";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,9 @@ export default async function Home() {
           </div>
         </section>
       </main>
+
+      {/* AI Chat Assistant */}
+      <AIChat />
     </div>
   );
 }

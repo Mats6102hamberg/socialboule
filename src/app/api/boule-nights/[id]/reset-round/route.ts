@@ -4,9 +4,9 @@ import { requireAdmin, handleAuthError } from "@/lib/auth";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: nightId } = params;
+  const { id: nightId } = await params;
 
   if (!nightId || typeof nightId !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });

@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 // Anmäl spelare
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: nightId } = params;
+  const { id: nightId } = await params;
 
   if (!nightId || typeof nightId !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  // Require authentication
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to sign up" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -18,6 +28,14 @@ export async function POST(
 
     if (!playerId) {
       return NextResponse.json({ error: "Missing playerId" }, { status: 400 });
+    }
+
+    // Verify that the authenticated user matches the playerId
+    if (session.playerId !== playerId) {
+      return NextResponse.json(
+        { error: "Forbidden: You can only sign up yourself" },
+        { status: 403 }
+      );
     }
 
     // Kolla om kvällen finns
@@ -72,12 +90,21 @@ export async function POST(
 // Avanmäl spelare
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: nightId } = params;
+  const { id: nightId } = await params;
 
   if (!nightId || typeof nightId !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  // Require authentication
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to cancel signup" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -86,6 +113,14 @@ export async function DELETE(
 
     if (!playerId) {
       return NextResponse.json({ error: "Missing playerId" }, { status: 400 });
+    }
+
+    // Verify that the authenticated user matches the playerId
+    if (session.playerId !== playerId) {
+      return NextResponse.json(
+        { error: "Forbidden: You can only cancel your own signup" },
+        { status: 403 }
+      );
     }
 
     // Hitta anmälan

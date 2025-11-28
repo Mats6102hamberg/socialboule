@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const { id } = context.params;
+  const { id } = await context.params;
 
   try {
     const player = await prisma.player.findUnique({

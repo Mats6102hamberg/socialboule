@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, handleAuthError } from "@/lib/auth";
+import { sanitizeString, sanitizeNumber, sanitizeDate } from "@/lib/sanitize";
 
 export async function GET() {
   try {
@@ -38,6 +39,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Sanitize string inputs
+    const sanitizedName = sanitizeString(name, { maxLength: 200, allowHtml: false });
+    const sanitizedLocation = location ? sanitizeString(location, { maxLength: 500, allowHtml: false }) : null;
+    const sanitizedDescription = description ? sanitizeString(description, { maxLength: 2000, allowHtml: false }) : null;
+
+    if (!sanitizedName) {
+      return NextResponse.json(
+        { error: "Invalid name" },
+        { status: 400 }
+      );
+    }
+
+    // Validate date
+    const parsedDate = sanitizeDate(date);
+    if (!parsedDate) {
+      return NextResponse.json(
+        { error: "Invalid date" },
+        { status: 400 }
+      );
+    }
+
     let parsedType: "DAY" | "EVENING" = "EVENING";
     if (type === "DAY" || type === "EVENING") {
       parsedType = type;
@@ -48,17 +70,14 @@ export async function POST(req: NextRequest) {
       parsedDrawMode = drawMode;
     }
 
-    let parsedMaxPlayers: number | null = null;
-    if (typeof maxPlayers === "number" && Number.isFinite(maxPlayers) && maxPlayers > 0) {
-      parsedMaxPlayers = Math.floor(maxPlayers);
-    }
+    const parsedMaxPlayers = sanitizeNumber(maxPlayers, { min: 1, max: 100, integer: true });
 
     const created = await prisma.bouleNight.create({
       data: {
-        name,
-        date: new Date(date),
-        location: location ?? null,
-        description: description ?? null,
+        name: sanitizedName,
+        date: parsedDate,
+        location: sanitizedLocation,
+        description: sanitizedDescription,
         type: parsedType,
         drawMode: parsedDrawMode,
         maxPlayers: parsedMaxPlayers,

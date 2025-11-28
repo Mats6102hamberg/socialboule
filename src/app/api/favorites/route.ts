@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 type FavoriteTargetType = "player" | "team" | "match";
 
@@ -39,14 +40,17 @@ async function ensureUser(userId: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-
-  if (!userId) {
-    return NextResponse.json({ error: "userId saknas" }, { status: 400 });
+  // Use session playerId instead of accepting userId from query params
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to view favorites" },
+      { status: 401 }
+    );
   }
 
   const favorites = await prisma.favorite.findMany({
-    where: { userId },
+    where: { userId: session.playerId },
     include: {
       player: true,
       team: true,
@@ -86,12 +90,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { userId, targetType, targetId } = body ?? {};
-
-  if (!userId || typeof userId !== "string") {
-    return NextResponse.json({ error: "userId saknas" }, { status: 400 });
+  // Use session playerId instead of accepting userId from request body
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to add favorites" },
+      { status: 401 }
+    );
   }
+
+  const body = await req.json();
+  const { targetType, targetId } = body ?? {};
 
   if (!targetId || typeof targetId !== "string") {
     return NextResponse.json({ error: "targetId saknas" }, { status: 400 });
@@ -101,6 +110,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "targetType måste vara player, team eller match" }, { status: 400 });
   }
 
+  const userId = session.playerId;
   await ensureUser(userId);
 
   const data = buildTargetData(targetType as FavoriteTargetType, targetId);
@@ -132,12 +142,17 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const body = await req.json();
-  const { userId, targetType, targetId } = body ?? {};
-
-  if (!userId || typeof userId !== "string") {
-    return NextResponse.json({ error: "userId saknas" }, { status: 400 });
+  // Use session playerId instead of accepting userId from request body
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to remove favorites" },
+      { status: 401 }
+    );
   }
+
+  const body = await req.json();
+  const { targetType, targetId } = body ?? {};
 
   if (!targetId || typeof targetId !== "string") {
     return NextResponse.json({ error: "targetId saknas" }, { status: 400 });
@@ -147,6 +162,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "targetType måste vara player, team eller match" }, { status: 400 });
   }
 
+  const userId = session.playerId;
   const where = buildTargetWhere(userId, targetType as FavoriteTargetType, targetId);
   const { count } = await prisma.favorite.deleteMany({ where });
 

@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MatchStatus, ResultConfirmationStatus, TeamSide } from "@/generated/client";
+import { getSession } from "@/lib/auth";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || typeof id !== "string") {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  // Require authentication
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to submit match results" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -18,6 +28,14 @@ export async function PATCH(
 
     if (!playerId || typeof playerId !== "string") {
       return NextResponse.json({ error: "playerId is required" }, { status: 400 });
+    }
+
+    // Verify that the authenticated user matches the playerId
+    if (session.playerId !== playerId) {
+      return NextResponse.json(
+        { error: "Forbidden: You can only submit results for yourself" },
+        { status: 403 }
+      );
     }
 
     if (walkoverSide && walkoverSide !== "HOME" && walkoverSide !== "AWAY") {

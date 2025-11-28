@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, handleAuthError } from "@/lib/auth";
+import { sanitizeString } from "@/lib/sanitize";
 
 export async function GET() {
   try {
@@ -18,19 +20,36 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Only admins can create players
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return handleAuthError(error);
+  }
+
   try {
     const body = await req.json();
     const { name } = body ?? {};
 
-    if (!name || typeof name !== "string" || !name.trim()) {
+    if (!name || typeof name !== "string") {
       return NextResponse.json(
         { error: "Name is required" },
         { status: 400 }
       );
     }
 
+    // Sanitize name input
+    const sanitizedName = sanitizeString(name, { maxLength: 100, allowHtml: false });
+
+    if (!sanitizedName) {
+      return NextResponse.json(
+        { error: "Invalid name" },
+        { status: 400 }
+      );
+    }
+
     const created = await prisma.player.create({
-      data: { name: name.trim() },
+      data: { name: sanitizedName },
     });
 
     return NextResponse.json(created, { status: 201 });

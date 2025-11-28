@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString, sanitizeDate } from "@/lib/sanitize";
 
 export async function GET() {
   try {
@@ -23,21 +24,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, message, preferredDate } = body ?? {};
 
-    const trimmedName = typeof name === "string" ? name.trim() : "";
-    const trimmedMessage = typeof message === "string" ? message.trim() : "";
+    // Sanitize string inputs
+    const sanitizedName = name ? sanitizeString(name, { maxLength: 100, allowHtml: false }) : null;
+    const sanitizedMessage = message ? sanitizeString(message, { maxLength: 500, allowHtml: false }) : null;
 
-    let parsedDate: Date | null = null;
-    if (preferredDate) {
-      const d = new Date(preferredDate);
-      if (!Number.isNaN(d.getTime())) {
-        parsedDate = d;
-      }
-    }
+    // Validate date if provided
+    const parsedDate = preferredDate ? sanitizeDate(preferredDate) : null;
 
     const created = await prisma.playRequest.create({
       data: {
-        name: trimmedName || null,
-        message: trimmedMessage || null,
+        name: sanitizedName,
+        message: sanitizedMessage,
         preferredDate: parsedDate,
       },
     });

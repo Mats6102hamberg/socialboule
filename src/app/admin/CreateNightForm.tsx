@@ -103,9 +103,15 @@ export function CreateNightForm() {
               className="w-full min-w-[180px] rounded-md border border-zinc-300 bg-white px-3 py-2 pr-10 text-sm outline-none ring-0 transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 dark:border-zinc-700 dark:bg-zinc-900"
               style={{ colorScheme: 'light dark' }}
             />
-            {/* Kalenderikon */}
+            {/* Kalenderikon - klickbar */}
             <svg
-              className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+              onClick={() => {
+                const input = document.getElementById('date') as HTMLInputElement | null;
+                if (input && 'showPicker' in input) {
+                  (input as any).showPicker();
+                }
+              }}
+              className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 cursor-pointer text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
