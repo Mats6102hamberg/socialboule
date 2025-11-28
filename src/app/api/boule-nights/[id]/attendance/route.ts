@@ -53,14 +53,6 @@ export async function POST(
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  // Only admins should be able to modify attendance
-  const { requireAdmin, handleAuthError } = await import("@/lib/auth");
-  try {
-    await requireAdmin();
-  } catch (error) {
-    return handleAuthError(error);
-  }
-
   try {
     const body = await req.json();
     const { playerIds, lastKnownUpdatedAt } = body ?? {};
