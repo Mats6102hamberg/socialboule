@@ -298,6 +298,9 @@ model Club {
   slug        String   @unique  // URL-vänligt namn, t.ex. "stockholms-petanque"
   description String?
   location    String?  // Stad/region
+  suspended   Boolean  @default(false)  // Avstängd klubb
+  suspendedAt DateTime?
+  suspendedReason String?
   
   admins      ClubAdmin[]
   players     ClubPlayer[]

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import DeleteNightButton from "@/app/admin/DeleteNightButton";
+import { SuspendClubButton } from "./SuspendClubButton";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,14 @@ export default async function ClubDetailPage({ params }: PageProps) {
                 Super Admin
               </span>
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight">{club.name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-semibold tracking-tight">{club.name}</h1>
+              {club.suspended && (
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900 dark:text-red-300">
+                  Avstängd
+                </span>
+              )}
+            </div>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               {club.location && `📍 ${club.location} · `}
               Skapad {new Date(club.createdAt).toLocaleDateString("sv-SE")}
@@ -72,6 +80,38 @@ export default async function ClubDetailPage({ params }: PageProps) {
             </Link>
           </div>
         </header>
+
+        {/* Suspension status and controls */}
+        <section className="space-y-3">
+          <div className={`rounded-xl border p-4 shadow-sm ${
+            club.suspended 
+              ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950" 
+              : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">
+                  {club.suspended ? "🚫 Klubben är avstängd" : "✅ Klubben är aktiv"}
+                </h3>
+                {club.suspended && club.suspendedReason && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    Anledning: {club.suspendedReason}
+                  </p>
+                )}
+                {club.suspended && club.suspendedAt && (
+                  <p className="text-xs text-zinc-500">
+                    Avstängd {new Date(club.suspendedAt).toLocaleDateString("sv-SE")}
+                  </p>
+                )}
+              </div>
+              <SuspendClubButton 
+                clubId={club.id} 
+                clubName={club.name}
+                isSuspended={club.suspended} 
+              />
+            </div>
+          </div>
+        </section>
 
         {/* Club admins */}
         <section className="space-y-3">

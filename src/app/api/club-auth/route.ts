@@ -123,6 +123,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Fel e-post eller lösenord" }, { status: 401 });
     }
 
+    // Check if club is suspended
+    if (admin.club.suspended) {
+      return NextResponse.json({ 
+        error: "Klubben är avstängd. Kontakta support för mer information." 
+      }, { status: 403 });
+    }
+
     // Create session token
     const sessionData = JSON.stringify({
       adminId: admin.id,
