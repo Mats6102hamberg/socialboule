@@ -29,12 +29,20 @@ export default async function Home() {
               deltagare och följ upp närvaro.
             </p>
           </div>
-          <a
-            href="/"
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-          >
-            ← Spelarsida
-          </a>
+          <div className="flex gap-3">
+            <a
+              href="/admin/klubbar"
+              className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              🔧 Super Admin
+            </a>
+            <a
+              href="/"
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              ← Spelarsida
+            </a>
+          </div>
         </header>
 
         <section className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]">
