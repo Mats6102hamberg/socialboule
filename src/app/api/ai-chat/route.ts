@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updatePlayerBadges, getPlayerBadges } from "@/services/badges";
+import { getPlayerRivals, getToughestRival } from "@/services/rivals";
 
 // OpenAI configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -11,67 +13,158 @@ interface Message {
   name?: string;
 }
 
-// Function definitions for OpenAI function calling
-const functions = [
+// Tool definitions for OpenAI tool calling
+const tools = [
   {
-    name: "get_upcoming_nights",
-    description: "Hämtar kommande Pétanque Crash-event",
-    parameters: {
-      type: "object",
-      properties: {
-        limit: {
-          type: "number",
-          description: "Antal kvällar att hämta (max 10)",
+    type: "function",
+    function: {
+      name: "get_upcoming_nights",
+      description: "Hämtar kommande Pétanque Crash-event",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Antal kvällar att hämta (max 10)",
+          },
         },
       },
     },
   },
   {
-    name: "get_player_stats",
-    description: "Hämtar statistik för en specifik spelare",
-    parameters: {
-      type: "object",
-      properties: {
-        playerName: {
-          type: "string",
-          description: "Spelarens namn",
+    type: "function",
+    function: {
+      name: "get_player_stats",
+      description: "Hämtar statistik för en specifik spelare",
+      parameters: {
+        type: "object",
+        properties: {
+          playerName: {
+            type: "string",
+            description: "Spelarens namn",
+          },
+        },
+        required: ["playerName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_player_chemistry",
+      description: "Hämtar spelkemi - vilka spelare som spelar bra tillsammans",
+      parameters: {
+        type: "object",
+        properties: {
+          playerName: {
+            type: "string",
+            description: "Spelarens namn",
+          },
+        },
+        required: ["playerName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_all_players",
+      description: "Hämtar alla spelare i klubben",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_leaderboard",
+      description: "Hämtar topplistan med bästa spelarna",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Antal spelare att visa (max 20)",
+          },
         },
       },
-      required: ["playerName"],
     },
   },
   {
-    name: "get_player_chemistry",
-    description: "Hämtar spelkemi - vilka spelare som spelar bra tillsammans",
-    parameters: {
-      type: "object",
-      properties: {
-        playerName: {
-          type: "string",
-          description: "Spelarens namn",
+    type: "function",
+    function: {
+      name: "get_player_form",
+      description: "Analyserar en spelares nuvarande form och trend baserat på senaste matcherna",
+      parameters: {
+        type: "object",
+        properties: {
+          playerName: {
+            type: "string",
+            description: "Spelarens namn",
+          },
+          matchLimit: {
+            type: "number",
+            description: "Antal senaste matcher att analysera (standard 10)",
+          },
         },
+        required: ["playerName"],
       },
-      required: ["playerName"],
     },
   },
   {
-    name: "get_all_players",
-    description: "Hämtar alla spelare i klubben",
-    parameters: {
-      type: "object",
-      properties: {},
-    },
-  },
-  {
-    name: "get_leaderboard",
-    description: "Hämtar topplistan med bästa spelarna",
-    parameters: {
-      type: "object",
-      properties: {
-        limit: {
-          type: "number",
-          description: "Antal spelare att visa (max 20)",
+    type: "function",
+    function: {
+      name: "get_player_badges",
+      description: "Hämtar en spelares badges och achievements (t.ex. Comeback King, Sniper, Järngansen)",
+      parameters: {
+        type: "object",
+        properties: {
+          playerName: {
+            type: "string",
+            description: "Spelarens namn",
+          },
         },
+        required: ["playerName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_player_rivals",
+      description: "Visar en spelares största rivaler - de motståndare spelaren mött mest",
+      parameters: {
+        type: "object",
+        properties: {
+          playerName: {
+            type: "string",
+            description: "Spelarens namn",
+          },
+          limit: {
+            type: "number",
+            description: "Antal rivaler att visa (standard 5)",
+          },
+        },
+        required: ["playerName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_toughest_rival",
+      description: "Hittar en spelares tuffaste rival - motståndaren med lägst vinstprocent mot",
+      parameters: {
+        type: "object",
+        properties: {
+          playerName: {
+            type: "string",
+            description: "Spelarens namn",
+          },
+        },
+        required: ["playerName"],
       },
     },
   },
@@ -313,6 +406,137 @@ async function getLeaderboard(limit: number = 10) {
     .slice(0, Math.min(limit, 20));
 }
 
+async function getPlayerForm(playerName: string, matchLimit: number = 10) {
+  const player = await prisma.player.findFirst({
+    where: {
+      name: {
+        contains: playerName,
+        mode: "insensitive",
+      },
+    },
+  });
+
+  if (!player) {
+    return { error: `Hittade ingen spelare som heter "${playerName}"` };
+  }
+
+  // Get recent matches
+  const matchPlayers = await prisma.matchPlayer.findMany({
+    where: { playerId: player.id },
+    include: {
+      matchTeam: {
+        include: {
+          match: {
+            include: {
+              night: true,
+            },
+          },
+        },
+      },
+    },
+    take: matchLimit * 2, // Get more to ensure we have enough completed matches
+  });
+
+  const recentMatches = matchPlayers
+    .filter((mp) => mp.matchTeam.match.status === "COMPLETED")
+    .map((mp) => {
+      const match = mp.matchTeam.match;
+      const isHome = mp.matchTeam.side === "HOME";
+      const myScore = isHome ? match.homeScore : match.awayScore;
+      const theirScore = isHome ? match.awayScore : match.homeScore;
+      const won = myScore !== null && theirScore !== null && myScore > theirScore;
+
+      return {
+        date: match.night.date.toLocaleDateString("sv-SE"),
+        nightDate: match.night.date,
+        won,
+        myScore,
+        theirScore,
+        pointDiff: myScore !== null && theirScore !== null ? myScore - theirScore : 0,
+      };
+    })
+    .sort((a, b) => b.nightDate.getTime() - a.nightDate.getTime())
+    .slice(0, matchLimit);
+
+  if (recentMatches.length === 0) {
+    return {
+      player: player.name,
+      message: "Spelaren har inga slutförda matcher ännu.",
+    };
+  }
+
+  const recentWins = recentMatches.filter((m) => m.won).length;
+  const recentWinRate = Math.round((recentWins / recentMatches.length) * 100);
+  const avgPointDiff =
+    recentMatches.reduce((sum, m) => sum + m.pointDiff, 0) / recentMatches.length;
+
+  // Calculate form trend (last 5 vs previous 5)
+  const last5 = recentMatches.slice(0, 5);
+  const prev5 = recentMatches.slice(5, 10);
+
+  let formTrend = "stabil";
+  if (last5.length >= 3 && prev5.length >= 3) {
+    const last5WinRate = last5.filter((m) => m.won).length / last5.length;
+    const prev5WinRate = prev5.filter((m) => m.won).length / prev5.length;
+
+    if (last5WinRate - prev5WinRate > 0.2) {
+      formTrend = "på uppgång 📈";
+    } else if (prev5WinRate - last5WinRate > 0.2) {
+      formTrend = "på nedgång 📉";
+    }
+  }
+
+  return {
+    player: player.name,
+    recentMatches: recentMatches.length,
+    winRate: `${recentWinRate}%`,
+    wins: recentWins,
+    losses: recentMatches.length - recentWins,
+    avgPointDiff: avgPointDiff.toFixed(1),
+    formTrend,
+    lastFiveResults: last5.map((m) => (m.won ? "V" : "F")).join("-"),
+    matches: recentMatches,
+  };
+}
+
+async function getPlayerBadgesWrapper(playerName: string) {
+  const player = await prisma.player.findFirst({
+    where: {
+      name: {
+        contains: playerName,
+        mode: "insensitive",
+      },
+    },
+  });
+
+  if (!player) {
+    return { error: `Hittade ingen spelare som heter "${playerName}"` };
+  }
+
+  // Uppdatera badges först
+  await updatePlayerBadges(player.id);
+
+  // Hämta badges
+  const badges = await getPlayerBadges(player.id);
+
+  if (badges.length === 0) {
+    return {
+      player: player.name,
+      message: "Spelaren har inga badges ännu. Spela fler matcher för att låsa upp achievements!",
+    };
+  }
+
+  return {
+    player: player.name,
+    badges: badges.map((b) => ({
+      name: b.name,
+      description: b.description,
+      icon: b.icon,
+      earnedAt: b.earnedAt.toLocaleDateString("sv-SE"),
+    })),
+  };
+}
+
 // Execute function based on name
 async function executeFunction(name: string, args: any) {
   switch (name) {
@@ -326,6 +550,14 @@ async function executeFunction(name: string, args: any) {
       return await getAllPlayers();
     case "get_leaderboard":
       return await getLeaderboard(args.limit);
+    case "get_player_form":
+      return await getPlayerForm(args.playerName, args.matchLimit);
+    case "get_player_badges":
+      return await getPlayerBadgesWrapper(args.playerName);
+    case "get_player_rivals":
+      return await getPlayerRivals(args.playerName, args.limit);
+    case "get_toughest_rival":
+      return await getToughestRival(args.playerName);
     default:
       return { error: "Unknown function" };
   }
@@ -353,10 +585,16 @@ export async function POST(req: NextRequest) {
       content: `Du är en hjälpsam AI-assistent för Pétanque Crash. Du hjälper medlemmar med:
 - Information om kommande Pétanque Crash-event
 - Statistik och resultat för spelare
+- Form-analys och trender för spelare
+- Badges och achievements (som "Comeback King", "Sniper", "Järngansen")
+- Rival-tracking - visa vem en spelare mött mest och statistik mot dem
 - Spelkemi och rekommendationer för lagsammansättning
+- Topplistan och rankningar
 - Svar på frågor om matcher och turneringar
 
 Var vänlig, hjälpsam och entusiastisk om boule. Svara alltid på svenska.
+När du visar badges, inkludera alltid emojin och förklara vad badgen betyder.
+När du visar rivaler, presentera statistiken på ett engagerande sätt och kommentera om spelaren har en tuff rival eller dominerar mot vissa motståndare.
 `,
     };
 
@@ -370,25 +608,28 @@ Var vänlig, hjälpsam och entusiastisk om boule. Svara alltid på svenska.
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4-turbo-preview",
+        model: "gpt-4o-mini",
         messages: allMessages,
-        functions,
-        function_call: "auto",
+        tools,
+        tool_choice: "auto",
         temperature: 0.7,
       }),
     });
 
     if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error("OpenAI API error:", errorText);
       throw new Error("OpenAI API error");
     }
 
     const data = await openaiResponse.json();
     const responseMessage = data.choices[0].message;
 
-    // Check if function call is needed
-    if (responseMessage.function_call) {
-      const functionName = responseMessage.function_call.name;
-      const functionArgs = JSON.parse(responseMessage.function_call.arguments);
+    // Check if tool call is needed
+    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+      const toolCall = responseMessage.tool_calls[0];
+      const functionName = toolCall.function.name;
+      const functionArgs = JSON.parse(toolCall.function.arguments);
 
       // Execute the function
       const functionResult = await executeFunction(functionName, functionArgs);
@@ -401,19 +642,25 @@ Var vänlig, hjälpsam och entusiastisk om boule. Svara alltid på svenska.
           Authorization: `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "gpt-4-turbo-preview",
+          model: "gpt-4o-mini",
           messages: [
             ...allMessages,
             responseMessage,
             {
-              role: "function",
-              name: functionName,
+              role: "tool",
+              tool_call_id: toolCall.id,
               content: JSON.stringify(functionResult),
             },
           ],
           temperature: 0.7,
         }),
       });
+
+      if (!secondResponse.ok) {
+        const errorText = await secondResponse.text();
+        console.error("OpenAI API error (second call):", errorText);
+        throw new Error("OpenAI API error");
+      }
 
       const secondData = await secondResponse.json();
       return NextResponse.json({

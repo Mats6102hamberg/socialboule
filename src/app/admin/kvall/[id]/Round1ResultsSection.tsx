@@ -8,6 +8,7 @@ export function Round1ResultsSection() {
       roundNumber={1}
       title="Resultat – omgång 1"
       description="Fyll i resultat för varje match. Poängen används senare för lottning av omgång 2."
+      adminMode={true}
     />
   );
 }

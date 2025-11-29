@@ -12,7 +12,7 @@ export function AIChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hej! Jag är din AI-assistent för Pétanque Crash. Jag kan hjälpa dig med:\n\n• Kommande event och anmälningar\n• Din statistik och resultat\n• Spelarkemi och rekommendationer\n• Frågor om matcher och poäng\n\nVad vill du veta?",
+      content: "Hej! Jag är din AI-assistent för Pétanque Crash. Jag kan hjälpa dig med:\n\n• Kommande event och anmälningar\n• Din statistik och resultat\n• Form-analys och trender\n• 🏆 Badges & achievements\n• 🎯 Rival-tracking\n• Spelarkemi och rekommendationer\n• Topplistan\n• Frågor om matcher och poäng\n\nVad vill du veta?",
     },
   ]);
   const [input, setInput] = useState("");

@@ -70,9 +70,10 @@ interface RoundResultsSectionProps {
   roundNumber: 1 | 2;
   title: string;
   description: string;
+  adminMode?: boolean;
 }
 
-export function RoundResultsSection({ roundNumber, title, description }: RoundResultsSectionProps) {
+export function RoundResultsSection({ roundNumber, title, description, adminMode = false }: RoundResultsSectionProps) {
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [formState, setFormState] = useState<Record<string, FormState>>({});
   const [loading, setLoading] = useState(false);
@@ -157,14 +158,20 @@ export function RoundResultsSection({ roundNumber, title, description }: RoundRe
     const form = formState[match.id];
     if (!form) return;
 
-    if (!form.playerId) {
+    // Only require playerId if not in admin mode
+    if (!adminMode && !form.playerId) {
       alert("Välj vilken spelare som rapporterar resultatet.");
       return;
     }
 
-    const payload: Record<string, unknown> = {
-      playerId: form.playerId,
-    };
+    const payload: Record<string, unknown> = {};
+
+    // Add adminOverride flag if in admin mode
+    if (adminMode) {
+      payload.adminOverride = true;
+    } else {
+      payload.playerId = form.playerId;
+    }
 
     if (form.walkoverSide) {
       payload.walkoverSide = form.walkoverSide;
@@ -315,23 +322,25 @@ export function RoundResultsSection({ roundNumber, title, description }: RoundRe
                     disabled={form?.walkoverSide !== ""}
                   />
                 </div>
-                <div>
-                  <label className="flex flex-col gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    Rapporteras av
-                    <select
-                      className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-800 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
-                      value={form?.playerId ?? ""}
-                      onChange={(e) => updateForm(match.id, { playerId: e.target.value })}
-                    >
-                      <option value="">Välj spelare</option>
-                      {allPlayers.map((p) => (
-                        <option key={p.player.id} value={p.player.id}>
-                          {p.player.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                {!adminMode && (
+                  <div>
+                    <label className="flex flex-col gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+                      Rapporteras av
+                      <select
+                        className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-800 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+                        value={form?.playerId ?? ""}
+                        onChange={(e) => updateForm(match.id, { playerId: e.target.value })}
+                      >
+                        <option value="">Välj spelare</option>
+                        {allPlayers.map((p) => (
+                          <option key={p.player.id} value={p.player.id}>
+                            {p.player.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">

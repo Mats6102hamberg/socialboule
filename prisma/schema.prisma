@@ -80,6 +80,7 @@ model Player {
   ranking    Ranking?
   favorites  Favorite[]
   clubs      ClubPlayer[]
+  badges     PlayerBadge[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -327,14 +328,62 @@ model ClubAdmin {
 // Koppling mellan spelare och klubb
 model ClubPlayer {
   id        String   @id @default(cuid())
-  
+
   club      Club     @relation(fields: [clubId], references: [id])
   clubId    String
-  
+
   player    Player   @relation(fields: [playerId], references: [id])
   playerId  String
-  
+
   createdAt DateTime @default(now())
-  
+
   @@unique([clubId, playerId])
+}
+
+// Badge-system för achievements
+model PlayerBadge {
+  id          String    @id @default(cuid())
+
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    String
+
+  badgeType   BadgeType
+
+  // När spelaren fick badgen
+  earnedAt    DateTime  @default(now())
+
+  // Metadata om prestationen (t.ex. "Won 5 games in a row")
+  metadata    String?
+
+  @@unique([playerId, badgeType])
+  @@index([playerId])
+}
+
+enum BadgeType {
+  // Vinst-relaterade
+  COMEBACK_KING      // Vunnit efter att ha legat under med 7+ poäng
+  SNIPER             // Vunnit 10+ matcher med exakt 13 poäng
+  IRON_MAN           // Spelat 50+ matcher totalt (Järngansen)
+  PERFECTIONIST      // Vunnit 5+ matcher med 13-0
+
+  // Streak-relaterade
+  HOT_STREAK         // 5 vinster i rad
+  UNSTOPPABLE        // 10 vinster i rad
+
+  // Form-relaterade
+  RISING_STAR        // Gått från <40% till >60% vinstprocent
+  CHAMPION           // 75%+ vinstprocent (minst 20 matcher)
+
+  // Kemi-relaterade
+  DYNAMIC_DUO        // 80%+ vinstprocent med samma partner (minst 10 matcher)
+  TEAM_PLAYER        // Spelat med 20+ olika partners
+
+  // Poäng-relaterade
+  POINT_MASTER       // Genomsnitt 10+ poäng per match (minst 20 matcher)
+  DEFENSIVE_WALL     // Genomsnitt <5 poäng insläppta per match (minst 20 matcher)
+
+  // Speciella
+  NIGHT_OWL          // Deltagit i 25+ event
+  EARLY_BIRD         // Anmält sig först till 10+ event
+  COMEBACK_SPECIALIST // 5+ comebacks (vunnit efter att ha legat under)
 }
