@@ -74,12 +74,16 @@ export async function GET() {
     });
 
     // Populäraste sidorna
-    const popularPages = await prisma.pageView.groupBy({
+    const popularPagesRaw = await prisma.pageView.groupBy({
       by: ["path"],
       _count: { path: true },
       orderBy: { _count: { path: "desc" } },
       take: 10,
-    }) as { path: string; _count: { path: number } }[];
+    });
+    const popularPages = popularPagesRaw.map((p) => ({
+      path: p.path,
+      views: p._count.path,
+    }));
 
     // Besök per dag (senaste 7 dagarna)
     const dailyViews: { date: string; count: number }[] = [];
@@ -110,10 +114,7 @@ export async function GET() {
       weekViews,
       monthViews,
       uniqueVisitorsWeek: uniqueVisitors.length,
-      popularPages: popularPages.map((p) => ({
-        path: p.path,
-        views: p._count.path,
-      })),
+      popularPages,
       dailyViews,
     });
   } catch (error) {
