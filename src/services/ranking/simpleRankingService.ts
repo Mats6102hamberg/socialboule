@@ -11,7 +11,8 @@ const POINTS_WIN = 3;
 const POINTS_LOSS = 0;
 
 export async function updateSimpleRanking(data: RankingUpdateData) {
-  const updates = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updates: any[] = [];
   const allPlayerIds = [...data.winnerPlayerIds, ...data.loserPlayerIds];
 
   for (const playerId of allPlayerIds) {
