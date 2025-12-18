@@ -37,6 +37,10 @@ async function RoundSection({
     orderBy: { lane: "asc" },
   });
 
+  type MatchWithTeams = (typeof matches)[number];
+  type MatchTeam = MatchWithTeams["teams"][number];
+  type MatchPlayer = MatchTeam["players"][number];
+
   const title = `Omgång ${roundNumber}`;
   const showDrawButton = roundNumber === 2 || roundNumber === 3;
   const drawAction =
@@ -78,11 +82,11 @@ async function RoundSection({
         </p>
       ) : (
         <div className="space-y-2">
-          {matches.map((match) => {
-            const home = match.teams.find((t) => t.side === "HOME");
-            const away = match.teams.find((t) => t.side === "AWAY");
-            const homePlayers = home?.players.map((mp) => mp.player.name).join(", ") ?? "";
-            const awayPlayers = away?.players.map((mp) => mp.player.name).join(", ") ?? "";
+          {matches.map((match: MatchWithTeams) => {
+            const home = match.teams.find((t: MatchTeam) => t.side === "HOME");
+            const away = match.teams.find((t: MatchTeam) => t.side === "AWAY");
+            const homePlayers = home?.players.map((mp: MatchPlayer) => mp.player.name).join(", ") ?? "";
+            const awayPlayers = away?.players.map((mp: MatchPlayer) => mp.player.name).join(", ") ?? "";
 
             return (
               <div
