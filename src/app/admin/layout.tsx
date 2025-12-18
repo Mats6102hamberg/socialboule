@@ -1,8 +1,9 @@
+import { AdminAuthGuard } from "./AdminAuthGuard";
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Auth temporarily disabled
-  return <>{children}</>;
+  return <AdminAuthGuard>{children}</AdminAuthGuard>;
 }
