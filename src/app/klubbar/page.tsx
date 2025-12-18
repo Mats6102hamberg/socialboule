@@ -17,6 +17,8 @@ export default async function ClubsPage() {
     },
   });
 
+  type ClubWithCount = (typeof clubs)[number];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-900 via-emerald-800 to-zinc-900">
       {/* Header */}
@@ -73,7 +75,7 @@ export default async function ClubsPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {clubs.map((club) => (
+            {clubs.map((club: ClubWithCount) => (
               <Link
                 key={club.id}
                 href={`/klubb/${club.slug}`}
