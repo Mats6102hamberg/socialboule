@@ -333,9 +333,35 @@ export default async function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800 bg-zinc-900/50 py-6">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-zinc-500">
-          <p>SocialBoule – Pétanque för alla</p>
+      <footer className="border-t border-zinc-800 bg-zinc-900/50 py-8">
+        <div className="mx-auto max-w-4xl px-4">
+          {/* CTA för klubbar */}
+          <div className="mb-6 rounded-xl border border-emerald-700/50 bg-emerald-900/20 p-6 text-center">
+            <h3 className="text-lg font-semibold text-white mb-2">
+              🏆 Har du en boule-klubb?
+            </h3>
+            <p className="text-sm text-emerald-200 mb-4">
+              Få ett komplett system för att hantera era Pétanque-kvällar. Gratis att komma igång!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/registrera"
+                className="rounded-lg bg-emerald-600 px-6 py-2 font-medium text-white hover:bg-emerald-500 transition"
+              >
+                Registrera din klubb
+              </Link>
+              <Link
+                href="/logga-in"
+                className="rounded-lg border border-emerald-600 px-6 py-2 font-medium text-emerald-300 hover:bg-emerald-900/50 transition"
+              >
+                Logga in som admin
+              </Link>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-zinc-500">
+            SocialBoule – Pétanque för alla
+          </p>
         </div>
       </footer>
     </div>
