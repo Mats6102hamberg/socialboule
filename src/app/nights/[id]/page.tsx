@@ -3,6 +3,8 @@ import { EditNightForm } from "./EditNightForm";
 import { AttendanceSection } from "./AttendanceSection";
 import { Round1ResultsSection } from "./Round1ResultsSection";
 import { Round2ResultsSection } from "./Round2ResultsSection";
+import { Round3ResultsSection } from "./Round3ResultsSection";
+import { NightStandings } from "./NightStandings";
 import { TeamDrawSection } from "./TeamDrawSection";
 import { TeamMatchesSection } from "./TeamMatchesSection";
 import { ResetRoundButton } from "./ResetRoundButton";
@@ -290,8 +292,12 @@ export default async function NightEditPage({ params }: PageProps) {
           </>
         )}
 
-        <Round2ResultsSection />
+        {/* Kvällens ställning - visas alltid när det finns resultat */}
+        <NightStandings />
 
+        {/* Resultatrapportering för alla rundor */}
+        <Round3ResultsSection />
+        <Round2ResultsSection />
         <Round1ResultsSection />
       </main>
     </div>

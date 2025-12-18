@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-// TODO: restore admin auth after demo
-import { createBalancedMatches, createDiverseMatches, createRandomMatches } from "@/lib/matchmaking";
+import { createRandomMatches } from "@/lib/matchmaking";
 
 export async function POST(
   req: NextRequest,
@@ -55,25 +54,9 @@ export async function POST(
       );
     }
 
-    // Get matchmaking mode from request body (default: balanced)
-    const body = await req.json().catch(() => ({}));
-    const matchmakingMode = body.mode || "balanced"; // balanced, diverse, or random
-
-    // Create matches using smart matchmaking
-    let matchPairings: Array<[string, string, string, string]>;
-
-    try {
-      if (matchmakingMode === "balanced") {
-        matchPairings = await createBalancedMatches(players, id);
-      } else if (matchmakingMode === "diverse") {
-        matchPairings = await createDiverseMatches(players, id);
-      } else {
-        matchPairings = createRandomMatches(players);
-      }
-    } catch (error) {
-      console.error("Matchmaking error, falling back to random:", error);
-      matchPairings = createRandomMatches(players);
-    }
+    // Runda 1 är ALLTID slumpmässig (neutral lottning)
+    // Alla spelare har samma chans oavsett tidigare resultat
+    const matchPairings = createRandomMatches(players);
 
     // Create round, matches, teams, and match players in a transaction
     const result = await prisma.$transaction(async (tx) => {

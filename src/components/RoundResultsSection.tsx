@@ -67,7 +67,7 @@ const walkoverOptions: { value: "" | TeamSide; label: string }[] = [
 ];
 
 interface RoundResultsSectionProps {
-  roundNumber: 1 | 2;
+  roundNumber: 1 | 2 | 3;
   title: string;
   description: string;
   adminMode?: boolean;
