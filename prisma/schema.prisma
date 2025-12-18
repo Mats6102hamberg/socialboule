@@ -387,3 +387,15 @@ enum BadgeType {
   EARLY_BIRD         // Anmält sig först till 10+ event
   COMEBACK_SPECIALIST // 5+ comebacks (vunnit efter att ha legat under)
 }
+
+// Besöksräknare för admin-statistik
+model PageView {
+  id        String   @id @default(cuid())
+  path      String   // Vilken sida som besöktes
+  userAgent String?  // Browser info
+  ip        String?  // IP-adress (anonymiserad)
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([createdAt])
+}

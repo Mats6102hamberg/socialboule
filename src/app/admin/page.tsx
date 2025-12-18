@@ -3,6 +3,7 @@ import { CreateNightForm } from "./CreateNightForm";
 import DeleteNightButton from "./DeleteNightButton";
 import { PlayersAdminSection } from "./PlayersAdminSection";
 import { AIChat } from "@/components/AIChat";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +118,9 @@ export default async function Home() {
             <PlayersAdminSection />
           </div>
         </section>
+
+        {/* Besöksstatistik */}
+        <AnalyticsDashboard />
       </main>
 
       {/* AI Chat Assistant */}
